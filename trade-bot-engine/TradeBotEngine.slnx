@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="src/TradeBotEngine.Core/TradeBotEngine.Core.csproj" Id="51fd796b-15d4-407d-9955-9441691eaeb1" />
+  <Project Path="src/TradeBotEngine.Functions/TradeBotEngine.Functions.csproj" />
+  <Project Path="src/TradeBotEngine.Infrastructure/TradeBotEngine.Infrastructure.csproj" Id="3b247376-9d26-49e5-b4ee-3a31e70185c0" />
+</Solution>

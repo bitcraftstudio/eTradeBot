@@ -1,0 +1,29 @@
+{
+  "name": "trade-bot-dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "nuxt dev",
+    "build": "nuxt build",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare"
+  },
+  "dependencies": {
+    "@nuxt/ui": "^4.4.0",
+    "@vueuse/core": "^14.2.1",
+    "chart.js": "^4.4.6",
+    "date-fns": "^4.1.0",
+    "nuxt": "^4.3.1",
+    "vue": "latest",
+    "vue-chartjs": "^5.3.1"
+  },
+  "devDependencies": {
+    "@iconify-json/heroicons": "^1.2.1",
+    "@tailwindcss/postcss": "^4.2.0",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.2.0",
+    "typescript": "^5.6.3"
+  }
+}

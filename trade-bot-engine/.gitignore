@@ -1,0 +1,7 @@
+bin/
+obj/
+*.user
+.vs/
+local.settings.json
+*.env
+publish/

@@ -6,11 +6,11 @@ export const useApi = () => {
   const fetchWithError = async (url: string, options: any = {}, loadingMessage?: string) => {
     // Only show loading for non-silent requests
     const showLoading = options.silent !== true
-    
+
     if (showLoading && loadingMessage) {
       startLoading(loadingMessage)
     }
-    
+
     try {
       const response = await $fetch(url, {
         baseURL,

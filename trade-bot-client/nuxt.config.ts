@@ -1,32 +1,35 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
-  ssr: false,
-  compatibilityDate: '2025-07-15',
-  devtools: { enabled: true },
-  modules: [
-    '@nuxt/ui',
-    '@nuxt/eslint'
-  ],
-  css: ['~/assets/css/main.css'],
+    modules: ['@nuxt/ui', '@nuxt/eslint'],
+    compatibilityDate: '2025-07-15',
+    devtools: { enabled: true },
 
-  runtimeConfig: {
-    public: {
-      apiUrl: process.env.NUXT_PUBLIC_API_URL || 'http://localhost:3001',
+    ssr: false,
+    css: ['~/assets/css/main.css'],
+
+    runtimeConfig: {
+        public: {
+            apiUrl: process.env.NUXT_PUBLIC_API_URL || 'http://localhost:7012'
+        }
     },
-  },
 
-  eslint: {
-    config: {
-      stylistic: {
-        commaDangle: 'never',
-        braceStyle: '1tbs'
-      }
+    eslint: {
+        config: {
+            stylistic: {
+                indent: 4,
+                semi: false,
+                quotes: 'single'
+            }
+        }
+    },
+
+    app: {
+        head: {
+            title: 'AI Trading Bot Dashboard'
+        }
+    },
+
+    devServer: {
+        port: 3002
     }
-  },
-
-  app: {
-    head: {
-      title: 'AI Trading Bot Dashboard',
-    },
-  },
 })

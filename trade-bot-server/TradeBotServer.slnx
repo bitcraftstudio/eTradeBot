@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="Instructions.md" />
+  </Folder>
+  <Project Path="TradeBot.Api/TradeBot.Api.csproj" Id="f60ae229-4322-40bc-a739-3295ddb693a1" />
+  <Project Path="TradeBot.Core/TradeBot.Core.csproj" Id="b94cdb4e-d24e-4e79-b500-03373199117d" />
+  <Project Path="TradeBot.Engine/TradeBot.Engine.csproj" Id="d104c9a0-78a2-4b0b-90f9-9f95862bf326" />
+</Solution>

@@ -17,9 +17,9 @@
 								</div>
 							</div>
 							<div class="flex items-center gap-3">
-								<UToggle v-model="schedulerEnabled" :loading="togglingScheduler"
+								<USwitch v-model="schedulerEnabled" :loading="togglingScheduler"
 									@update:model-value="toggleScheduler" />
-								<UBadge :color="schedulerEnabled ? 'green' : 'red'" size="lg" class="cursor-pointer"
+								<UBadge :color="schedulerEnabled ? 'primary' : 'error'" size="lg" class="cursor-pointer"
 									@click="toggleScheduler(!schedulerEnabled)">
 									{{ schedulerEnabled ? 'Running' : 'Stopped' }}
 								</UBadge>
@@ -68,7 +68,7 @@
 									<UIcon name="i-heroicons-sun" class="w-5 h-5 text-yellow-500" />
 									<h4 class="font-semibold text-gray-900 dark:text-white">Morning Scan</h4>
 								</div>
-								<UToggle v-model="config.morningScanEnabled" @update:model-value="toggleMorningScan" />
+								<USwitch v-model="config.morningScanEnabled" @update:model-value="toggleMorningScan" />
 							</div>
 						</template>
 
@@ -97,7 +97,7 @@
 									<UIcon name="i-heroicons-eye" class="w-5 h-5 text-purple-500" />
 									<h4 class="font-semibold text-gray-900 dark:text-white">Position Monitor</h4>
 								</div>
-								<UToggle v-model="config.positionMonitoringEnabled" @update:model-value="togglePositionMonitoring" />
+								<USwitch v-model="config.positionMonitoringEnabled" @update:model-value="togglePositionMonitoring" />
 							</div>
 						</template>
 
@@ -124,7 +124,7 @@
 									<UIcon name="i-heroicons-academic-cap" class="w-5 h-5 text-blue-500" />
 									<h4 class="font-semibold text-gray-900 dark:text-white">Daily Learning</h4>
 								</div>
-								<UToggle v-model="config.dailyLearningEnabled" @update:model-value="toggleDailyLearning" />
+								<USwitch v-model="config.dailyLearningEnabled" @update:model-value="toggleDailyLearning" />
 							</div>
 						</template>
 
@@ -177,12 +177,12 @@
 											: 'Manual approval required for all trades' }}
 									</p>
 								</div>
-								<UToggle v-model="config.autoTradeEnabled" />
+								<USwitch Toggle v-model="config.autoTradeEnabled" />
 							</div>
 						</div>
 
 						<!-- Watchlist -->
-						<UFormGroup label="Watchlist" :hint="`${watchlist.length} symbols`">
+						<UFormField label="Watchlist" :hint="`${watchlist.length} symbols`">
 							<div class="space-y-3">
 								<div class="flex gap-2">
 									<UInput v-model="newSymbol" placeholder="Enter symbol (e.g., AAPL)" class="flex-1"
@@ -211,21 +211,21 @@
 									No symbols in watchlist. Add some to start monitoring.
 								</div>
 							</div>
-						</UFormGroup>
+						</UFormField>
 
 						<!-- Trading Limits -->
 						<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-							<UFormGroup label="Max Daily Trades" hint="Maximum auto-trades per day">
+							<UFormField label="Max Daily Trades" description="Maximum auto-trades per day">
 								<UInput v-model.number="config.maxDailyTrades" type="number" min="1" max="20" />
-							</UFormGroup>
+							</UFormField>
 
-							<UFormGroup label="Min Confidence" hint="Minimum AI confidence (0-100%)">
+							<UFormField label="Min Confidence" description="Minimum AI confidence (0-100%)">
 								<div class="space-y-2">
 									<UInput :model-value="(config.minConfidence * 100).toFixed(0)" type="number" min="0" max="100"
 										@update:model-value="config.minConfidence = $event / 100" />
-									<UProgress :value="config.minConfidence * 100" />
+									<UProgress v-model="minConfidence" />
 								</div>
-							</UFormGroup>
+							</UFormField>
 						</div>
 
 						<!-- Unsaved changes indicator -->
@@ -368,7 +368,13 @@ const savedConfig = ref(null)
 const newSymbol = ref('')
 const scanResults = ref(null)
 
-// Track unsaved changes
+const minConfidence = computed(() =>  {
+	if (!config.value) return 0
+	return config.value.minConfidence * 100
+})
+	
+
+// Track unsaved change
 const hasUnsavedChanges = computed(() => {
 	if (!savedConfig.value) return false
 
@@ -417,7 +423,7 @@ const fetchStatus = async () => {
 }
 
 // Toggle master scheduler on/off
-const toggleScheduler = async (enabled) => {
+const toggleScheduler = async (enabled: boolean) => {
 	togglingScheduler.value = true
 	const endpoint = enabled ? api.scheduler.enableScheduler : api.scheduler.disableScheduler
 	const { error } = await endpoint()
@@ -429,7 +435,7 @@ const toggleScheduler = async (enabled) => {
 			description: enabled
 				? 'Automated tasks will now run on schedule'
 				: 'All automated tasks have been paused',
-			color: enabled ? 'green' : 'yellow',
+			color: enabled ? 'primary' : 'warning',
 		})
 	} else {
 		// Revert on error
@@ -437,14 +443,14 @@ const toggleScheduler = async (enabled) => {
 		toast.add({
 			title: 'Error',
 			description: error || 'Failed to toggle scheduler',
-			color: 'red',
+			color: 'error',
 		})
 	}
 	togglingScheduler.value = false
 }
 
 // Toggle morning scan
-const toggleMorningScan = async (enabled) => {
+const toggleMorningScan = async (enabled: boolean) => {
 	const endpoint = enabled ? api.scheduler.enableMorningScan : api.scheduler.disableMorningScan
 	const { error } = await endpoint()
 
@@ -452,7 +458,7 @@ const toggleMorningScan = async (enabled) => {
 		toast.add({
 			title: enabled ? 'Morning Scan Enabled' : 'Morning Scan Disabled',
 			description: enabled ? 'Market scans will run at 9 AM EST' : 'Morning scans are now disabled',
-			color: enabled ? 'green' : 'gray',
+			color: enabled ? 'primary' : 'neutral',
 		})
 	} else {
 		config.value.morningScanEnabled = !enabled
@@ -460,7 +466,7 @@ const toggleMorningScan = async (enabled) => {
 }
 
 // Toggle position monitoring
-const togglePositionMonitoring = async (enabled) => {
+const togglePositionMonitoring = async (enabled: boolean) => {
 	const endpoint = enabled ? api.scheduler.enablePositionMonitoring : api.scheduler.disablePositionMonitoring
 	const { error } = await endpoint()
 
@@ -468,7 +474,7 @@ const togglePositionMonitoring = async (enabled) => {
 		toast.add({
 			title: enabled ? 'Position Monitoring Enabled' : 'Position Monitoring Disabled',
 			description: enabled ? 'Positions will be monitored hourly' : 'Position monitoring is now disabled',
-			color: enabled ? 'green' : 'gray',
+			color: enabled ? 'primary' : 'neutral',
 		})
 	} else {
 		config.value.positionMonitoringEnabled = !enabled
@@ -476,7 +482,7 @@ const togglePositionMonitoring = async (enabled) => {
 }
 
 // Toggle daily learning
-const toggleDailyLearning = async (enabled) => {
+const toggleDailyLearning = async (enabled: boolean) => {
 	const endpoint = enabled ? api.scheduler.enableDailyLearning : api.scheduler.disableDailyLearning
 	const { error } = await endpoint()
 
@@ -484,7 +490,7 @@ const toggleDailyLearning = async (enabled) => {
 		toast.add({
 			title: enabled ? 'Daily Learning Enabled' : 'Daily Learning Disabled',
 			description: enabled ? 'Learning reviews will run at 5 PM EST' : 'Daily learning is now disabled',
-			color: enabled ? 'green' : 'gray',
+			color: enabled ? 'primary' : 'neutral',
 		})
 	} else {
 		config.value.dailyLearningEnabled = !enabled
@@ -515,7 +521,7 @@ const saveConfig = async () => {
 		toast.add({
 			title: 'Configuration Saved',
 			description: `Watchlist now has ${watchlist.value.length} symbols`,
-			color: 'green',
+			color: 'primary',
 		})
 
 		console.log('Saved watchlist:', watchlist.value)
@@ -523,7 +529,7 @@ const saveConfig = async () => {
 		toast.add({
 			title: 'Error',
 			description: error || 'Failed to save configuration',
-			color: 'red',
+			color: 'error',
 		})
 	}
 	saving.value = false
@@ -579,13 +585,13 @@ const resetConfig = async () => {
 		toast.add({
 			title: 'Configuration Reset',
 			description: 'Settings have been reset to defaults',
-			color: 'green',
+			color: 'primary',
 		})
 	} else {
 		toast.add({
 			title: 'Error',
 			description: error || 'Failed to reset configuration',
-			color: 'red',
+			color: 'error',
 		})
 	}
 	resetting.value = false
@@ -603,13 +609,13 @@ const triggerScan = async () => {
 		toast.add({
 			title: 'Market Scan Complete',
 			description: `Analyzed ${data.symbolsAnalyzed} symbols, executed ${data.tradesExecuted} trades`,
-			color: 'green',
+			color: 'primary',
 		})
 	} else {
 		toast.add({
 			title: 'Error',
 			description: error || 'Failed to run market scan',
-			color: 'red',
+			color: 'error',
 		})
 	}
 
@@ -636,7 +642,7 @@ const getRecommendationColor = (rec) => {
 		'SELL': 'red',
 		'HOLD': 'yellow',
 	}
-	return colors[rec] || 'gray'
+	return colors[rec] || 'neutral'
 }
 
 // Fetch data on mount

@@ -11,8 +11,6 @@
 		</template>
 
 		<template #right>
-			<UButton icon="i-heroicons-arrow-path" variant="ghost" color="neutral" :loading="isRefreshing"
-				@click="refreshData" />
 			<UColorModeButton />
 		</template>
 	</UDashboardNavbar>

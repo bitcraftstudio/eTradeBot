@@ -154,7 +154,7 @@
 								<p class="text-3xl font-bold text-gray-900 dark:text-white mt-1">
 									{{ (metrics.winRate * 100).toFixed(1) }}%
 								</p>
-								<UProgress :value="metrics.winRate * 100" class="mt-2" />
+								<UProgress v-model="winRate" class="mt-2" />
 							</div>
 
 							<div class="p-4 rounded-lg bg-gray-50 dark:bg-gray-800">
@@ -209,6 +209,11 @@ const toast = useToast()
 const running = ref(false)
 const latestInsight = ref(null)
 const metrics = ref(null)
+
+const winRate = computed(() => {
+	if (!metrics.value) return 0
+	return metrics.value?.winRate * 100 || 0
+})
 
 const fetchData = async () => {
 	const [insightRes, metricsRes] = await Promise.all([

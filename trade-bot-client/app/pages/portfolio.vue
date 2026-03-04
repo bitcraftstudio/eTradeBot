@@ -63,22 +63,19 @@
 							<div>
 								<div class="flex items-center justify-between mb-2">
 									<span class="text-sm font-medium text-gray-700 dark:text-gray-300">Cash</span>
-									<span class="text-sm font-semibold text-gray-900 dark:text-white">
-										{{ ((portfolio?.cashBalance || 0) / (portfolio?.totalValue || 1) * 100).toFixed(1) }}%
-									</span>
+									<span class="text-sm font-semibold text-gray-900 dark:text-white">{{ (cashPercent).toFixed(1) }}%</span>
 								</div>
-								<UProgress :value="(portfolio?.cashBalance || 0) / (portfolio?.totalValue || 1) * 100" color="blue" />
+								<UProgress v-model="cashPercent" color="secondary" />
 							</div>
 
 							<div>
 								<div class="flex items-center justify-between mb-2">
 									<span class="text-sm font-medium text-gray-700 dark:text-gray-300">Positions</span>
 									<span class="text-sm font-semibold text-gray-900 dark:text-white">
-										{{ ((portfolio?.positionValue || 0) / (portfolio?.totalValue || 1) * 100).toFixed(1) }}%
+										{{ (positionPercent).toFixed(1) }}%
 									</span>
 								</div>
-								<UProgress :value="(portfolio?.positionValue || 0) / (portfolio?.totalValue || 1) * 100"
-									color="primary" />
+								<UProgress v-model="positionPercent" color="primary" />
 							</div>
 						</div>
 					</UCard>
@@ -152,6 +149,16 @@ const loading = ref(false)
 const portfolio = ref(null)
 const metrics = ref(null)
 
+const cashPercent = computed(() => {
+	if (!portfolio.value || portfolio.value.totalValue === 0) return 0
+	return (portfolio.value.cashBalance / portfolio.value.totalValue) * 100
+})
+
+const positionPercent = computed(() => {
+	if (!portfolio.value || portfolio.value.totalValue === 0) return 0
+	return ((portfolio.value?.positionValue || 0) / (portfolio.value?.totalValue || 1)) * 100
+})
+
 const fetchData = async () => {
 	loading.value = true
 	const [portfolioRes, metricsRes] = await Promise.all([
@@ -162,6 +169,8 @@ const fetchData = async () => {
 	if (portfolioRes.data) portfolio.value = portfolioRes.data
 	if (metricsRes.data) metrics.value = metricsRes.data
 	loading.value = false
+
+	console.log('Portfolio Summary:', portfolio.value)
 }
 
 const formatCurrency = (value) => {

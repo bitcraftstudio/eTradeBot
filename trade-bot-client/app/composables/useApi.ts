@@ -1,3 +1,5 @@
+import type { StockHunterConfig, StockHunterFilters, SchedulerConfig } from '~/types'
+
 export const useApi = () => {
   const config = useRuntimeConfig()
   const baseURL = config.public.apiUrl
@@ -100,7 +102,7 @@ export const useApi = () => {
     scheduler: {
       getStatus: () => fetchWithError('/scheduler/status', { silent: true }),
       getConfig: () => fetchWithError('/scheduler/config', { silent: true }),
-      updateConfig: (config: any) => fetchWithError('/scheduler/config', {
+      updateConfig: (config: Partial<SchedulerConfig>) => fetchWithError('/scheduler/config', {
         method: 'PATCH',
         body: config,
       }, 'Saving configuration...'),
@@ -125,20 +127,33 @@ export const useApi = () => {
     stockHunter: {
       getStatus: () => fetchWithError('/stocks/status', { silent: true }),
       getConfig: () => fetchWithError('/stocks/config', { silent: true }),
-      updateConfig: (config: any) => fetchWithError('/stocks/config', {
+      updateConfig: (config: StockHunterConfig) => fetchWithError('/stocks/config', {
         method: 'PUT',
         body: config,
       }, 'Saving configuration...'),
-      hunt: (filters: any) => fetchWithError('/stocks/hunt', {
+      hunt: (filters: StockHunterFilters) => fetchWithError('/stocks/hunt', {
         method: 'POST',
         body: filters,
       }, 'Hunting for stocks...'),
       getDiscovered: () => fetchWithError('/stocks/discovered', {}, 'Loading discovered stocks...'),
       addToWatchlist: (symbol: string) => fetchWithError(`/stocks/${symbol}/watchlist`, { method: 'POST' }, `Adding ${symbol} to watchlist...`),
+      fixStockNames: () => fetchWithError('/stocks/fix-names', { method: 'POST' }, 'Fixing stock names...'),
       quickHunt: (params: any) => {
         const query = new URLSearchParams(params).toString()
         return fetchWithError(`/stocks/hunt?${query}`, {}, 'Quick hunting...')
       },
+    },
+
+    // Financial Modeling Prep
+    fmp: {
+      getStatus: () => fetchWithError('/fmp/status', { silent: true }),
+      enrichStock: (symbol: string) => fetchWithError(`/fmp/enrich/${symbol}`, { method: 'POST' }, `Enriching ${symbol} data...`),
+      getEnrichedStock: (symbol: string) => fetchWithError(`/fmp/stocks/${symbol}`, {}, `Loading ${symbol} enriched data...`),
+      refreshData: (days = 3) => fetchWithError(`/fmp/refresh?days=${days}`, { method: 'POST' }, 'Refreshing stock data...'),
+      screenStocks: (criteria: any) => fetchWithError('/fmp/screen', {
+        method: 'POST',
+        body: criteria,
+      }, 'Screening stocks...'),
     },
 
     // Health

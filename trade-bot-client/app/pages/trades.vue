@@ -257,12 +257,12 @@ const viewTradeDetails = (trade) => {
 
 const getRiskColor = (risk) => {
 	const colors = {
-		'LOW': 'green',
-		'MODERATE': 'yellow',
-		'HIGH': 'orange',
-		'VERY_HIGH': 'red',
+		'LOW': 'primary',
+		'MODERATE': 'warning',
+		'HIGH': 'error',
+		'VERY_HIGH': 'error',
 	}
-	return colors[risk] || 'gray'
+	return colors[risk] || 'neutral'
 }
 
 onMounted(() => {

@@ -13,10 +13,10 @@
 
 					<div class="space-y-6">
 						<!-- Symbol Input -->
-						<UFormGroup label="Stock Symbol" required>
+						<UFormField label="Stock Symbol" required>
 							<UInput v-model="form.symbol" size="lg" placeholder="e.g., AAPL, TSLA, MSFT"
 								icon="i-heroicons-magnifying-glass" @input="form.symbol = form.symbol.toUpperCase()" />
-						</UFormGroup>
+						</UFormField>
 
 						<!-- Get Quote Button -->
 						<UButton block variant="outline" :loading="loadingQuote" @click="getQuote">
@@ -29,7 +29,7 @@
 							:color="quote.change >= 0 ? 'green' : 'red'" />
 
 						<!-- Trade Type -->
-						<UFormGroup label="Trade Type" required>
+						<UFormField label="Trade Type" required>
 							<div class="grid grid-cols-2 gap-4">
 								<UButton :variant="form.type === 'BUY' ? 'solid' : 'outline'" color="primary" size="lg" block
 									@click="form.type = 'BUY'">
@@ -42,13 +42,13 @@
 									Sell
 								</UButton>
 							</div>
-						</UFormGroup>
+						</UFormField>
 
 						<!-- Quantity -->
-						<UFormGroup label="Quantity (shares)" hint="Leave blank for auto-calculation">
+						<UFormField label="Quantity (shares)" hint="Leave blank for auto-calculation">
 							<UInput v-model.number="form.quantity" type="number" min="1" size="lg"
 								placeholder="Auto-calculated based on risk" />
-						</UFormGroup>
+						</UFormField>
 
 						<!-- Position Estimate -->
 						<div v-if="quote && form.type === 'BUY'" class="p-4 rounded-lg bg-gray-50 dark:bg-gray-800">
@@ -70,9 +70,9 @@
 						</div>
 
 						<!-- AI Analysis Toggle -->
-						<UFormGroup>
+						<UFormField>
 							<UCheckbox v-model="useAI" label="Get AI recommendation before executing" />
-						</UFormGroup>
+						</UFormField>
 
 						<!-- Execute Button -->
 						<UButton block size="lg" :color="form.type === 'BUY' ? 'green' : 'red'" :loading="executing"
@@ -227,7 +227,7 @@ const getQuote = async () => {
 		toast.add({
 			title: 'Error',
 			description: 'Please enter a stock symbol',
-			color: 'red',
+			color: 'error',
 		})
 		return
 	}
@@ -246,7 +246,7 @@ const getQuote = async () => {
 		toast.add({
 			title: 'Error',
 			description: error || 'Failed to get quote',
-			color: 'red',
+			color: 'error',
 		})
 	}
 
@@ -266,7 +266,7 @@ const executeTrade = async () => {
 		toast.add({
 			title: 'Error',
 			description: 'Please enter a stock symbol',
-			color: 'red',
+			color: 'error',
 		})
 		return
 	}
@@ -288,7 +288,7 @@ const executeTrade = async () => {
 		toast.add({
 			title: 'Trade Executed',
 			description: `${form.value.type} order for ${data.quantity || 'auto'} shares of ${form.value.symbol} executed`,
-			color: 'green',
+			color: 'primary',
 		})
 
 		// Reset form
@@ -308,7 +308,7 @@ const executeTrade = async () => {
 		toast.add({
 			title: 'Error',
 			description: data?.message || error || 'Failed to execute trade',
-			color: 'red',
+			color: 'error',
 		})
 	}
 
@@ -342,7 +342,7 @@ const getDecisionColor = (decision) => {
 		'SELL': 'red',
 		'HOLD': 'yellow',
 	}
-	return colors[label] || 'gray'
+	return colors[label] || 'neutral'
 }
 
 // Risk helpers
@@ -359,6 +359,6 @@ const getRiskColor = (risk) => {
 		'HIGH': 'orange',
 		'VERY_HIGH': 'red',
 	}
-	return colors[label] || 'gray'
+	return colors[label] || 'neutral'
 }
 </script>

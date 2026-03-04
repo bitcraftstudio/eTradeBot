@@ -17,9 +17,6 @@
 								</div>
 							</div>
 							<div class="flex items-center gap-2">
-								<UBadge :color="status?.apiConfigured ? 'green' : 'yellow'" variant="subtle">
-									{{ status?.apiConfigured ? 'TipRanks Connected' : 'Demo Mode' }}
-								</UBadge>
 								<UButton icon="i-heroicons-arrow-path" color="neutral" variant="ghost" :loading="loading"
 									@click="fetchStatus" />
 							</div>
@@ -57,6 +54,94 @@
 					</div>
 				</UCard>
 
+				<!-- Discovered Stocks -->
+				<UCard v-if="discoveredStocks.length > 0">
+					<template #header>
+						<div class="flex items-center justify-between">
+							<div class="flex items-center gap-3">
+								<UIcon name="i-heroicons-eye" class="w-6 h-6 text-green-500" />
+								<div>
+									<h3 class="text-xl font-bold text-gray-900 dark:text-white">Discovered Stocks</h3>
+									<p class="text-sm text-gray-500 dark:text-gray-400">Stocks found by the hunter</p>
+								</div>
+							</div>
+							<div class="flex items-center gap-2">
+								<UButton icon="i-heroicons-arrow-path" color="neutral" variant="ghost" size="sm"
+									@click="fetchDiscoveredStocks" />
+							</div>
+						</div>
+					</template>
+
+					<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+						<div v-for="stock in discoveredStocks" :key="stock.id"
+							class="p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-primary-500 dark:hover:border-primary-500 transition-colors cursor-pointer"
+							@click="viewDetails(stock)">
+							<!-- Header -->
+							<div class="flex items-start justify-between mb-3">
+								<div>
+									<p class="text-lg font-bold text-gray-900 dark:text-white">{{ stock.symbol }}</p>
+									<p class="text-sm text-gray-500 dark:text-gray-400 truncate">{{ stock.name }}</p>
+								</div>
+								<div class="flex items-center gap-2">
+									<UBadge :color="getSmartScoreColor(stock.smartScore)" size="lg">
+										{{ stock.smartScore }}
+									</UBadge>
+									<UBadge v-if="stock.addedToWatchlist" color="blue" variant="subtle" size="xs">
+										Watchlist
+									</UBadge>
+								</div>
+							</div>
+
+							<!-- Metrics -->
+							<div class="space-y-2 mb-3">
+								<div class="flex justify-between text-sm">
+									<span class="text-gray-600 dark:text-gray-400">Price:</span>
+									<span class="font-semibold text-gray-900 dark:text-white">
+										{{ formatCurrency(stock.currentPrice) }}
+									</span>
+								</div>
+								<div class="flex justify-between text-sm">
+									<span class="text-gray-600 dark:text-gray-400">Target:</span>
+									<span class="font-semibold text-gray-900 dark:text-white">
+										{{ formatCurrency(stock.priceTarget) }}
+									</span>
+								</div>
+								<div class="flex justify-between text-sm">
+									<span class="text-gray-600 dark:text-gray-400">Upside:</span>
+									<span class="font-semibold text-green-600 dark:text-green-400">
+										+{{ stock.upside.toFixed(1) }}%
+									</span>
+								</div>
+								<div class="flex justify-between text-sm">
+									<span class="text-gray-600 dark:text-gray-400">Last Updated:</span>
+									<span class="font-semibold text-gray-900 dark:text-white">
+										{{ new Date(stock.lastUpdated).toLocaleDateString() }}
+									</span>
+								</div>
+							</div>
+
+							<!-- Signals -->
+							<div class="flex flex-wrap gap-1 mb-3">
+								<UBadge v-if="stock.hedgeFundTrend === 'Increasing'" color="blue" variant="subtle" size="xs">
+									🏦 HF Buying
+								</UBadge>
+								<UBadge v-if="stock.insiderSentiment === 'Positive'" color="purple" variant="subtle" size="xs">
+									👔 Insider Buy
+								</UBadge>
+								<UBadge v-if="stock.analystConsensus?.buy > 20" color="primary" variant="subtle" size="xs">
+									📊 {{ stock.analystConsensus.buy }} Buys
+								</UBadge>
+							</div>
+
+							<!-- Action -->
+							<UButton block size="sm" variant="outline" :disabled="stock.addedToWatchlist"
+								@click.stop="addToWatchlist(stock.symbol)">
+								{{ stock.addedToWatchlist ? 'In Watchlist' : 'Add to Watchlist' }}
+							</UButton>
+						</div>
+					</div>
+				</UCard>
+
 				<!-- Filter Controls -->
 				<UCard>
 					<template #header>
@@ -86,35 +171,35 @@
 								</span>
 							</div>
 							<div class="grid grid-cols-2 gap-4">
-								<UFormGroup label="Minimum">
+								<UFormField label="Minimum">
 									<UInput v-model.number="filters.minSmartScore" type="number" min="1" max="10" />
-								</UFormGroup>
-								<UFormGroup label="Maximum">
+								</UFormField>
+								<UFormField label="Maximum">
 									<UInput v-model.number="filters.maxSmartScore" type="number" min="1" max="10" />
-								</UFormGroup>
+								</UFormField>
 							</div>
 							<div class="mt-2 flex gap-2">
 								<UBadge @click="filters.minSmartScore = 10; filters.maxSmartScore = 10" class="cursor-pointer"
-									color="green">
+									color="primary">
 									Perfect (10)</UBadge>
 								<UBadge @click="filters.minSmartScore = 9; filters.maxSmartScore = 10" class="cursor-pointer"
 									color="primary">
 									Excellent (9-10)</UBadge>
 								<UBadge @click="filters.minSmartScore = 8; filters.maxSmartScore = 10" class="cursor-pointer"
-									color="blue">Good+
+									color="info">Good+
 									(8-10)</UBadge>
 							</div>
 						</div>
 
 						<!-- Upside & Market Cap -->
 						<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-							<UFormGroup label="Minimum Upside (%)" hint="Minimum % to analyst price target">
+							<UFormField label="Minimum Upside (%)" hint="Minimum % to analyst price target">
 								<UInput v-model.number="filters.minUpside" type="number" min="0" max="100" placeholder="5" />
-							</UFormGroup>
+							</UFormField>
 
-							<UFormGroup label="Minimum Market Cap ($B)" hint="Minimum company size">
-								<UInput v-model.number="filters.minMarketCapB" type="number" min="0" placeholder="1" />
-							</UFormGroup>
+							<UFormField label="Minimum Market Cap ($B)" hint="Minimum company size">
+								<UInput v-model.number="filters.minMarketCap" type="number" min="0" placeholder="1" />
+							</UFormField>
 						</div>
 
 						<!-- Smart Money Filters -->
@@ -143,14 +228,14 @@
 						<div class="space-y-3">
 							<h4 class="text-sm font-medium text-gray-700 dark:text-gray-300">Advanced Filters</h4>
 							<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-								<UFormGroup label="Min Analyst Rating" hint="1-5 scale (4 = Buy)">
+								<UFormField label="Min Analyst Rating" hint="1-5 scale (4 = Buy)">
 									<UInput v-model.number="filters.minAnalystRating" type="number" min="1" max="5" step="0.1"
 										placeholder="4.0" />
-								</UFormGroup>
+								</UFormField>
 
-								<UFormGroup label="Max Results" hint="Maximum discoveries">
+								<UFormField label="Max Results" hint="Maximum discoveries">
 									<UInput v-model.number="filters.limit" type="number" min="1" max="100" placeholder="50" />
-								</UFormGroup>
+								</UFormField>
 							</div>
 						</div>
 					</div>
@@ -257,14 +342,14 @@
 
 								<!-- Signals -->
 								<div class="flex flex-wrap gap-1 mb-3">
-									<UBadge v-if="stock.hedgeFundTrend === 'Increasing'" color="blue" variant="subtle" size="xs">
+									<UBadge v-if="stock.hedgeFundTrend === 'Increasing'" color="info" variant="subtle" size="xs">
 										🏦 HF Buying
 									</UBadge>
-									<UBadge v-if="stock.insiderSentiment === 'Positive'" color="purple" variant="subtle" size="xs">
+									<UBadge v-if="stock.insiderSentiment === 'Positive'" color="primary" variant="subtle" size="xs">
 										👔 Insider Buy
 									</UBadge>
-									<UBadge v-if="stock.analystConsensus.buy > 20" color="primary" variant="subtle" size="xs">
-										📊 {{ stock.analystConsensus.buy }} Buys
+									<UBadge v-if="stock.analystConsensus?.buy || 0 > 20" color="primary" variant="subtle" size="xs">
+										📊 {{ stock.analystConsensus?.buy }} Buys
 									</UBadge>
 								</div>
 
@@ -303,7 +388,7 @@
 									<p class="text-3xl font-bold text-primary-600 dark:text-primary-400 mt-1">
 										{{ selectedStock.smartScore }}/10
 									</p>
-									<UProgress :value="selectedStock.smartScore * 10" class="mt-2" />
+									<UProgress v-model="smartScore" class="mt-2" />
 								</div>
 
 								<div class="p-4 rounded-lg bg-green-50 dark:bg-green-900/20">
@@ -323,19 +408,19 @@
 								<div class="grid grid-cols-3 gap-3">
 									<div class="text-center p-3 rounded-lg bg-green-50 dark:bg-green-900/20">
 										<p class="text-2xl font-bold text-green-600 dark:text-green-400">
-											{{ selectedStock.analystConsensus.buy }}
+											{{ selectedStock.analystConsensus?.buy }}
 										</p>
 										<p class="text-xs text-gray-600 dark:text-gray-400">Buy</p>
 									</div>
 									<div class="text-center p-3 rounded-lg bg-yellow-50 dark:bg-yellow-900/20">
 										<p class="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
-											{{ selectedStock.analystConsensus.hold }}
+											{{ selectedStock.analystConsensus?.hold }}
 										</p>
 										<p class="text-xs text-gray-600 dark:text-gray-400">Hold</p>
 									</div>
 									<div class="text-center p-3 rounded-lg bg-red-50 dark:bg-red-900/20">
 										<p class="text-2xl font-bold text-red-600 dark:text-red-400">
-											{{ selectedStock.analystConsensus.sell }}
+											{{ selectedStock.analystConsensus?.sell }}
 										</p>
 										<p class="text-xs text-gray-600 dark:text-gray-400">Sell</p>
 									</div>
@@ -368,7 +453,7 @@
 									<div v-for="(reason, idx) in selectedStock.reasons" :key="idx"
 										class="flex items-start gap-2 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20">
 										<UIcon name="i-heroicons-check-circle"
-											class="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+											class="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink" />
 										<p class="text-sm text-blue-800 dark:text-blue-200">{{ reason }}</p>
 									</div>
 								</div>
@@ -392,21 +477,24 @@
 </template>
 
 <script setup lang="ts">
+import type { DiscoveredStock, StockHunterStatus, StockHunterResult, StockHunterFilters, SchedulerStatus } from '@@/types'
+
 const api = useApi()
 const toast = useToast()
 
 const loading = ref(false)
 const hunting = ref(false)
-const status = ref(null)
-const huntResults = ref(null)
+const status = ref<StockHunterStatus | null>(null)
+const huntResults = ref<StockHunterResult | null>(null)
 const showDetails = ref(false)
-const selectedStock = ref(null)
+const selectedStock = ref<DiscoveredStock | null>(null)
+const discoveredStocks = ref<DiscoveredStock[]>([])
 
-const filters = ref({
+const filters = ref<StockHunterFilters>({
 	minSmartScore: 8,
 	maxSmartScore: 10,
 	minUpside: 5,
-	minMarketCapB: 1,
+	minMarketCap: 1,
 	minAnalystRating: 4.0,
 	requiredHedgeFundActivity: false,
 	requiredInsiderBuying: false,
@@ -421,6 +509,12 @@ const fetchStatus = async () => {
 	loading.value = false
 }
 
+// Fetch discovered stocks
+const fetchDiscoveredStocks = async () => {
+	const { data } = await api.stockHunter.getDiscovered()
+	if (data) discoveredStocks.value = data
+}
+
 // Run hunt
 const runHunt = async () => {
 	hunting.value = true
@@ -430,7 +524,7 @@ const runHunt = async () => {
 		minSmartScore: filters.value.minSmartScore,
 		maxSmartScore: filters.value.maxSmartScore,
 		minUpside: filters.value.minUpside,
-		minMarketCap: filters.value.minMarketCapB * 1000000000,
+		minMarketCap: filters.value.minMarketCap * 1000000000,
 		minAnalystRating: filters.value.minAnalystRating,
 		requiredHedgeFundActivity: filters.value.requiredHedgeFundActivity,
 		requiredInsiderBuying: filters.value.requiredInsiderBuying,
@@ -444,13 +538,13 @@ const runHunt = async () => {
 		toast.add({
 			title: 'Hunt Complete',
 			description: `Found ${data.filtered} stocks matching criteria`,
-			color: 'green',
+			color: 'primary',
 		})
 	} else {
 		toast.add({
 			title: 'Hunt Failed',
 			description: error || 'Failed to complete hunt',
-			color: 'red',
+			color: 'error',
 		})
 	}
 
@@ -463,7 +557,7 @@ const resetFilters = () => {
 		minSmartScore: 8,
 		maxSmartScore: 10,
 		minUpside: 5,
-		minMarketCapB: 1,
+		minMarketCap: 1,
 		minAnalystRating: 4.0,
 		requiredHedgeFundActivity: false,
 		requiredInsiderBuying: false,
@@ -472,15 +566,15 @@ const resetFilters = () => {
 }
 
 // View stock details
-const viewDetails = (stock) => {
+const viewDetails = (stock: any) => {
 	selectedStock.value = stock
 	showDetails.value = true
 }
 
 // Add to watchlist
-const addToWatchlist = async (symbol) => {
+const addToWatchlist = async (symbol: string) => {
 	// Get current scheduler config
-	const { data: schedulerStatus } = await api.scheduler.getStatus()
+	const { data: schedulerStatus } = await api.scheduler.getStatus() as { data?: SchedulerStatus }
 
 	if (schedulerStatus) {
 		const currentWatchlist = schedulerStatus.config.watchlist || []
@@ -489,7 +583,7 @@ const addToWatchlist = async (symbol) => {
 			toast.add({
 				title: 'Already in Watchlist',
 				description: `${symbol} is already in your watchlist`,
-				color: 'yellow',
+				color: 'warning',
 			})
 			return
 		}
@@ -504,20 +598,22 @@ const addToWatchlist = async (symbol) => {
 			toast.add({
 				title: 'Added to Watchlist',
 				description: `${symbol} has been added to your scheduler watchlist`,
-				color: 'green',
+				color: 'primary',
 			})
+			// Refresh discovered stocks to update the watchlist status
+			await fetchDiscoveredStocks()
 		} else {
 			toast.add({
 				title: 'Error',
 				description: 'Failed to add to watchlist',
-				color: 'red',
+				color: 'error',
 			})
 		}
 	}
 }
 
 // Format currency
-const formatCurrency = (value) => {
+const formatCurrency = (value: number) => {
 	return new Intl.NumberFormat('en-US', {
 		style: 'currency',
 		currency: 'USD',
@@ -525,29 +621,37 @@ const formatCurrency = (value) => {
 }
 
 // Get smart score color
-const getSmartScoreColor = (score) => {
-	if (score >= 9) return 'green'
-	if (score >= 8) return 'primary'
+const getSmartScoreColor = (score: number) => {
+	if (score >= 9) return 'primary'
+	if (score >= 8) return 'secondary'
 	if (score >= 7) return 'yellow'
 	return 'gray'
 }
 
 // Get hedge fund color
-const getHedgeFundColor = (trend) => {
-	if (trend === 'Increasing') return 'green'
-	if (trend === 'Decreasing') return 'red'
+const getHedgeFundColor = (trend: string) => {
+	if (trend === 'Increasing') return 'primary'
+	if (trend === 'Decreasing') return 'error'
 	return 'gray'
 }
 
 // Get insider color
-const getInsiderColor = (sentiment) => {
-	if (sentiment === 'Positive') return 'green'
-	if (sentiment === 'Negative') return 'red'
+const getInsiderColor = (sentiment: string) => {
+	if (sentiment === 'Positive') return 'primary'
+	if (sentiment === 'Negative') return 'error'
 	return 'gray'
 }
+
+const smartScore = computed(() => {
+	if (!selectedStock.value) return 0
+	const score = selectedStock.value.smartScore * 10
+
+	return score
+})
 
 // Fetch data on mount
 onMounted(() => {
 	fetchStatus()
+	fetchDiscoveredStocks()
 })
 </script>

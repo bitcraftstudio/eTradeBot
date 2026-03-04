@@ -1,222 +1,212 @@
 <template>
-	<UDashboardPanel id="analysis">
-		<template #header>
-			<Topbar :title="'AI Analysis'" :description="'AI-powered stock analysis'" />
-		</template>
-		<template #body>
-			<div class="space-y-6">
-				<!-- Stock Analysis Form -->
+<UDashboardPanel id="analysis">
+	<template #header>
+		<Topbar :title="'AI Analysis'" :description="'AI-powered stock analysis'" />
+	</template>
+	<template #body>
+		<div class="space-y-6">
+			<!-- Stock Analysis Form -->
+			<UCard>
+				<template #header>
+					<h3 class="text-xl font-bold">AI Stock Analysis</h3>
+				</template>
+
+				<div class="space-y-4">
+					<UInput v-model="symbol" icon="i-heroicons-magnifying-glass" size="lg" placeholder="Enter stock symbol (e.g., AAPL, TSLA, MSFT)" @keyup.enter="analyzeStock" />
+					<UButton block size="lg" :loading="analyzing" @click="analyzeStock">
+						Analyze Stock
+					</UButton>
+				</div>
+			</UCard>
+
+			<!-- Analysis Results -->
+			<div v-if="analysis" class="space-y-6">
+				<!-- Price Header -->
 				<UCard>
-					<template #header>
-						<h3 class="text-xl font-bold">AI Stock Analysis</h3>
-					</template>
-
-					<div class="space-y-4">
-						<UInput v-model="symbol" icon="i-heroicons-magnifying-glass" size="lg"
-							placeholder="Enter stock symbol (e.g., AAPL, TSLA, MSFT)" @keyup.enter="analyzeStock" />
-
-						<UButton block size="lg" :loading="analyzing" @click="analyzeStock">
-							Analyze Stock
-						</UButton>
+					<div class="flex items-center justify-between">
+						<div>
+							<h2 class="text-2xl font-bold text-gray-900 dark:text-white">{{ analysis.symbol }}</h2>
+							<p class="text-3xl font-bold text-gray-900 dark:text-white mt-2">
+								{{ formatCurrency(analysis.currentPrice) }}
+							</p>
+						</div>
+						<UBadge :color="getDecisionColor(recommendation?.decision)" size="lg" class="text-lg px-4 py-2">
+							{{ getDecisionLabel(recommendation?.decision) }}
+						</UBadge>
 					</div>
 				</UCard>
 
-				<!-- Analysis Results -->
-				<div v-if="analysis" class="space-y-6">
-					<!-- Price Header -->
-					<UCard>
+				<!-- AI Recommendation -->
+				<UCard>
+					<template #header>
 						<div class="flex items-center justify-between">
-							<div>
-								<h2 class="text-2xl font-bold text-gray-900 dark:text-white">{{ analysis.symbol }}</h2>
-								<p class="text-3xl font-bold text-gray-900 dark:text-white mt-2">
-									{{ formatCurrency(analysis.currentPrice) }}
+							<h3 class="text-lg font-semibold">AI Recommendation</h3>
+							<div class="flex items-center gap-2">
+								<span class="text-sm text-gray-500">Confidence:</span>
+								<UBadge color="secondary" variant="subtle">
+									{{ formatPercent(recommendation?.confidence) }}
+								</UBadge>
+							</div>
+						</div>
+					</template>
+
+					<div class="space-y-4">
+						<!-- Reasoning -->
+						<div class="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20">
+							<p class="text-sm font-medium text-blue-900 dark:text-blue-300 mb-2">AI Reasoning</p>
+							<p class="text-blue-800 dark:text-blue-200">{{ recommendation?.reasoning || 'No reasoning available' }}
+							</p>
+						</div>
+
+						<!-- Scores Grid -->
+						<div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+							<div class="p-4 rounded-lg bg-gray-50 dark:bg-gray-800">
+								<p class="text-sm text-gray-500 dark:text-gray-400">Confidence</p>
+								<p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+									{{ formatPercent(recommendation?.confidence) }}
+								</p>
+								<UProgress v-model="confidencePercent" class="mt-2" />
+							</div>
+								<div class="p-4 rounded-lg bg-gray-50 dark:bg-gray-800">
+								<p class="text-sm text-gray-500 dark:text-gray-400">Risk Level</p>
+								<UBadge :color="getRiskColor(recommendation?.riskAssessment)" size="lg" class="mt-2">
+									{{ getRiskLabel(recommendation?.riskAssessment) }}
+								</UBadge>
+							</div>
+							<div class="p-4 rounded-lg bg-gray-50 dark:bg-gray-800">
+								<p class="text-sm text-gray-500 dark:text-gray-400">Technical Score</p>
+								<p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+									{{ recommendation?.technicalScore || 0 }}/100
 								</p>
 							</div>
-							<UBadge :color="getDecisionColor(recommendation?.decision)" size="lg" class="text-lg px-4 py-2">
-								{{ getDecisionLabel(recommendation?.decision) }}
+
+							<div class="p-4 rounded-lg bg-gray-50 dark:bg-gray-800">
+								<p class="text-sm text-gray-500 dark:text-gray-400">Momentum Score</p>
+								<p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+									{{ recommendation?.momentumScore || 0 }}/100
+								</p>
+							</div>
+						</div>
+
+						<!-- Trade Suggestions -->
+						<div v-if="recommendation?.suggestedEntryPrice" class="grid grid-cols-3 gap-4">
+							<div class="p-4 rounded-lg bg-green-50 dark:bg-green-900/20">
+								<p class="text-sm text-green-600 dark:text-green-400">Entry Price</p>
+								<p class="text-xl font-bold text-green-700 dark:text-green-300 mt-1">
+									{{ formatCurrency(recommendation.suggestedEntryPrice) }}
+								</p>
+							</div>
+
+							<div class="p-4 rounded-lg bg-red-50 dark:bg-red-900/20">
+								<p class="text-sm text-red-600 dark:text-red-400">Stop Loss</p>
+								<p class="text-xl font-bold text-red-700 dark:text-red-300 mt-1">
+									{{ formatCurrency(recommendation.suggestedStopLoss) }}
+								</p>
+							</div>
+
+							<div class="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20">
+								<p class="text-sm text-blue-600 dark:text-blue-400">Take Profit</p>
+								<p class="text-xl font-bold text-blue-700 dark:text-blue-300 mt-1">
+									{{ formatCurrency(recommendation.suggestedTakeProfit) }}
+								</p>
+							</div>
+						</div>
+
+						<!-- Expected Returns -->
+						<div class="grid grid-cols-2 gap-4">
+							<div class="p-4 rounded-lg bg-gray-50 dark:bg-gray-800">
+								<p class="text-sm text-gray-500 dark:text-gray-400">Expected Return</p>
+								<p class="text-xl font-bold mt-1"
+									:class="recommendation?.expectedReturn >= 0 ? 'text-green-600' : 'text-red-600'">
+									{{ formatPercent(recommendation?.expectedReturn) }}
+								</p>
+							</div>
+
+							<div class="p-4 rounded-lg bg-gray-50 dark:bg-gray-800">
+								<p class="text-sm text-gray-500 dark:text-gray-400">Max Risk</p>
+								<p class="text-xl font-bold text-red-600 mt-1">
+									{{ formatPercent(recommendation?.maxRisk) }}
+								</p>
+							</div>
+						</div>
+					</div>
+				</UCard>
+
+				<!-- Technical Analysis -->
+				<UCard>
+					<template #header>
+						<div class="flex items-center justify-between">
+							<h3 class="text-lg font-semibold">Technical Analysis</h3>
+							<UBadge :color="getTrendColor(technicalAnalysis?.trend)" variant="subtle">
+								{{ getTrendLabel(technicalAnalysis?.trend) }} ({{ technicalAnalysis?.strength || 0 }}%)
 							</UBadge>
 						</div>
-					</UCard>
+					</template>
 
-					<!-- AI Recommendation -->
-					<UCard>
-						<template #header>
-							<div class="flex items-center justify-between">
-								<h3 class="text-lg font-semibold">AI Recommendation</h3>
-								<div class="flex items-center gap-2">
-									<span class="text-sm text-gray-500">Confidence:</span>
-									<UBadge color="blue" variant="subtle">
-										{{ formatPercent(recommendation?.confidence) }}
-									</UBadge>
-								</div>
-							</div>
-						</template>
-
-						<div class="space-y-4">
-							<!-- Reasoning -->
-							<div class="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20">
-								<p class="text-sm font-medium text-blue-900 dark:text-blue-300 mb-2">AI Reasoning</p>
-								<p class="text-blue-800 dark:text-blue-200">{{ recommendation?.reasoning || 'No reasoning available' }}
-								</p>
-							</div>
-
-							<!-- Scores Grid -->
-							<div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-								<div class="p-4 rounded-lg bg-gray-50 dark:bg-gray-800">
-									<p class="text-sm text-gray-500 dark:text-gray-400">Confidence</p>
-									<p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-										{{ formatPercent(recommendation?.confidence) }}
-									</p>
-									<UProgress :value="(recommendation?.confidence || 0) * 100" class="mt-2" />
-								</div>
-
-								<div class="p-4 rounded-lg bg-gray-50 dark:bg-gray-800">
-									<p class="text-sm text-gray-500 dark:text-gray-400">Risk Level</p>
-									<UBadge :color="getRiskColor(recommendation?.riskAssessment)" size="lg" class="mt-2">
-										{{ getRiskLabel(recommendation?.riskAssessment) }}
-									</UBadge>
-								</div>
-
-								<div class="p-4 rounded-lg bg-gray-50 dark:bg-gray-800">
-									<p class="text-sm text-gray-500 dark:text-gray-400">Technical Score</p>
-									<p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-										{{ recommendation?.technicalScore || 0 }}/100
-									</p>
-								</div>
-
-								<div class="p-4 rounded-lg bg-gray-50 dark:bg-gray-800">
-									<p class="text-sm text-gray-500 dark:text-gray-400">Momentum Score</p>
-									<p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-										{{ recommendation?.momentumScore || 0 }}/100
-									</p>
-								</div>
-							</div>
-
-							<!-- Trade Suggestions -->
-							<div v-if="recommendation?.suggestedEntryPrice" class="grid grid-cols-3 gap-4">
-								<div class="p-4 rounded-lg bg-green-50 dark:bg-green-900/20">
-									<p class="text-sm text-green-600 dark:text-green-400">Entry Price</p>
-									<p class="text-xl font-bold text-green-700 dark:text-green-300 mt-1">
-										{{ formatCurrency(recommendation.suggestedEntryPrice) }}
-									</p>
-								</div>
-
-								<div class="p-4 rounded-lg bg-red-50 dark:bg-red-900/20">
-									<p class="text-sm text-red-600 dark:text-red-400">Stop Loss</p>
-									<p class="text-xl font-bold text-red-700 dark:text-red-300 mt-1">
-										{{ formatCurrency(recommendation.suggestedStopLoss) }}
-									</p>
-								</div>
-
-								<div class="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20">
-									<p class="text-sm text-blue-600 dark:text-blue-400">Take Profit</p>
-									<p class="text-xl font-bold text-blue-700 dark:text-blue-300 mt-1">
-										{{ formatCurrency(recommendation.suggestedTakeProfit) }}
-									</p>
-								</div>
-							</div>
-
-							<!-- Expected Returns -->
-							<div class="grid grid-cols-2 gap-4">
-								<div class="p-4 rounded-lg bg-gray-50 dark:bg-gray-800">
-									<p class="text-sm text-gray-500 dark:text-gray-400">Expected Return</p>
-									<p class="text-xl font-bold mt-1"
-										:class="recommendation?.expectedReturn >= 0 ? 'text-green-600' : 'text-red-600'">
-										{{ formatPercent(recommendation?.expectedReturn) }}
-									</p>
-								</div>
-
-								<div class="p-4 rounded-lg bg-gray-50 dark:bg-gray-800">
-									<p class="text-sm text-gray-500 dark:text-gray-400">Max Risk</p>
-									<p class="text-xl font-bold text-red-600 mt-1">
-										{{ formatPercent(recommendation?.maxRisk) }}
-									</p>
-								</div>
-							</div>
+					<!-- Signals -->
+					<div v-if="technicalAnalysis?.signals?.length" class="mb-4">
+						<p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Signals</p>
+						<div class="flex flex-wrap gap-2">
+							<UBadge v-for="(signal, idx) in technicalAnalysis.signals" :key="idx" color="neutral" variant="subtle">
+								{{ signal }}
+							</UBadge>
 						</div>
-					</UCard>
+					</div>
+				</UCard>
 
-					<!-- Technical Analysis -->
-					<UCard>
-						<template #header>
-							<div class="flex items-center justify-between">
-								<h3 class="text-lg font-semibold">Technical Analysis</h3>
-								<UBadge :color="getTrendColor(technicalAnalysis?.trend)" variant="subtle">
-									{{ getTrendLabel(technicalAnalysis?.trend) }} ({{ technicalAnalysis?.strength || 0
-									}}%)
-								</UBadge>
-							</div>
-						</template>
-
-						<!-- Signals -->
-						<div v-if="technicalAnalysis?.signals?.length" class="mb-4">
-							<p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Signals</p>
-							<div class="flex flex-wrap gap-2">
-								<UBadge v-for="(signal, idx) in technicalAnalysis.signals" :key="idx" color="neutral" variant="subtle">
-									{{ signal }}
-								</UBadge>
-							</div>
-						</div>
-					</UCard>
-
-					<!-- News Sentiment -->
-					<UCard>
-						<template #header>
-							<div class="flex items-center justify-between">
-								<h3 class="text-lg font-semibold">News Sentiment</h3>
-								<UBadge :color="getSentimentColor(sentiment?.overallSentiment)" variant="subtle">
-									{{ sentiment?.sentimentLabel || 'NEUTRAL' }}
-								</UBadge>
-							</div>
-						</template>
-
-						<div v-if="sentiment?.articles?.length" class="space-y-3">
-							<div v-for="(article, idx) in sentiment.articles.slice(0, 5)" :key="idx"
-								class="p-4 rounded-lg bg-gray-50 dark:bg-gray-800">
-								<div class="flex items-start justify-between gap-4">
-									<div class="flex-1">
-										<p class="font-medium text-gray-900 dark:text-white">{{ article.title }}</p>
-										<p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-											{{ article.source }} • {{ formatDate(article.publishedDate) }}
-										</p>
-									</div>
-									<UBadge :color="getSentimentColor(article.sentiment)" variant="subtle">
-										{{ getSentimentLabel(article.sentiment) }}
-									</UBadge>
-								</div>
-							</div>
-						</div>
-
-						<div v-else class="text-center py-4 text-gray-500">
-							No recent news available
-						</div>
-					</UCard>
-
-					<!-- Quick Trade -->
-					<UCard>
+				<!-- News Sentiment -->
+				<UCard>
+					<template #header>
 						<div class="flex items-center justify-between">
-							<div>
-								<h3 class="text-lg font-semibold">Quick Trade</h3>
-								<p class="text-sm text-gray-500">Execute based on AI recommendation</p>
-							</div>
-							<div class="flex gap-3">
-								<UButton color="green" size="lg" @click="goToTrade('BUY')">
-									Buy {{ analysis.symbol }}
-								</UButton>
-								<UButton color="red" size="lg" @click="goToTrade('SELL')">
-									Sell {{ analysis.symbol }}
-								</UButton>
+							<h3 class="text-lg font-semibold">News Sentiment</h3>
+							<UBadge :color="getSentimentColor(sentiment?.overallSentiment)" variant="subtle">
+								{{ sentiment?.sentimentLabel || 'NEUTRAL' }}
+							</UBadge>
+						</div>
+					</template>
+
+					<div v-if="sentiment?.articles?.length" class="space-y-3">
+						<div v-for="(article, idx) in sentiment.articles.slice(0, 5)" :key="idx"
+							class="p-4 rounded-lg bg-gray-50 dark:bg-gray-800">
+							<div class="flex items-start justify-between gap-4">
+								<div class="flex-1">
+									<p class="font-medium text-gray-900 dark:text-white">{{ article.title }}</p>
+									<p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+										{{ article.source }} • {{ formatDate(article.publishedDate) }}
+									</p>
+								</div>
+								<UBadge :color="getSentimentColor(article.sentiment)" variant="subtle">
+									{{ getSentimentLabel(article.sentiment) }}
+								</UBadge>
 							</div>
 						</div>
-					</UCard>
-				</div>
+					</div>
 
-				<!-- No Results -->
-				<UAlert v-else-if="!analyzing" icon="i-heroicons-information-circle" title="Enter a stock symbol"
-					description="Enter a stock symbol above to get AI-powered analysis" />
+					<div v-else class="text-center py-4 text-gray-500">
+						No recent news available
+					</div>
+				</UCard>
+
+				<!-- Quick Trade -->
+				<UCard>
+					<div class="flex items-center justify-between">
+						<div>
+							<h3 class="text-lg font-semibold">Quick Trade</h3>
+							<p class="text-sm text-gray-500">Execute based on AI recommendation</p>
+						</div>
+						<div class="flex gap-3">
+							<UButton color="primary" size="lg" @click="goToTrade('BUY')">Buy {{ analysis.symbol }}</UButton>
+							<UButton color="error" size="lg" @click="goToTrade('SELL')">Sell {{ analysis.symbol }}</UButton>
+						</div>
+					</div>
+				</UCard>
 			</div>
-		</template>
-	</UDashboardPanel>
+
+			<!-- No Results -->
+			<UAlert v-else-if="!analyzing" icon="i-heroicons-information-circle" title="Enter a stock symbol" description="Enter a stock symbol above to get AI-powered analysis" />
+		</div>
+	</template>
+</UDashboardPanel>
 </template>
 
 <script setup lang="ts">
@@ -255,12 +245,17 @@ const trendMap = {
 	2: 'NEUTRAL',
 }
 
+const confidencePercent = computed(() => {
+	if (!recommendation.value) return 0
+	return (recommendation.value?.confidence || 0) * 100
+})
+
 const analyzeStock = async () => {
 	if (!symbol.value) {
 		toast.add({
 			title: 'Error',
 			description: 'Please enter a stock symbol',
-			color: 'red',
+			color: 'error',
 		})
 		return
 	}
@@ -277,7 +272,7 @@ const analyzeStock = async () => {
 		toast.add({
 			title: 'Error',
 			description: error || 'Failed to analyze stock',
-			color: 'red',
+			color: 'error',
 		})
 	}
 
@@ -329,7 +324,7 @@ const getDecisionColor = (decision) => {
 		'SELL': 'red',
 		'HOLD': 'yellow',
 	}
-	return colors[label] || 'gray'
+	return colors[label] || 'neautral'
 }
 
 // Risk helpers (handles both string and number enum values)
@@ -346,7 +341,7 @@ const getRiskColor = (risk) => {
 		'HIGH': 'orange',
 		'VERY_HIGH': 'red',
 	}
-	return colors[label] || 'gray'
+	return colors[label] || 'neutral'
 }
 
 // Trend helpers (handles both string and number enum values)
@@ -358,19 +353,19 @@ const getTrendLabel = (trend) => {
 const getTrendColor = (trend) => {
 	const label = getTrendLabel(trend)
 	const colors = {
-		'BULLISH': 'green',
-		'BEARISH': 'red',
-		'NEUTRAL': 'yellow',
+		'Bullish': 'primary',
+		'Bearish': 'error',
+		'Neutral': 'warning',
 	}
-	return colors[label] || 'gray'
+	return colors[label] || 'neutral'
 }
 
 // Sentiment helpers
 const getSentimentColor = (sentiment) => {
-	if (sentiment == null) return 'gray'
-	if (sentiment > 0.3) return 'green'
-	if (sentiment < -0.3) return 'red'
-	return 'gray'
+	if (sentiment == null) return 'neutral'
+	if (sentiment > 0.3) return 'primary'
+	if (sentiment < -0.3) return 'error'
+	return 'warning'
 }
 
 const getSentimentLabel = (sentiment) => {
